@@ -26,7 +26,7 @@ public class NaukriResumeUpdater {
 //        WebDriverManager.chromedriver().setup();
 
         ChromeOptions options = new ChromeOptions();
-//        options.addArguments("--headless=new"); // required for GitHub Actions (no GUI)
+        options.setBinary("/usr/bin/google-chrome"); // 👈 important for GitHub Actions
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--window-size=1920,1080");
@@ -38,8 +38,25 @@ public class NaukriResumeUpdater {
             driver.get("https://www.naukri.com/nlogin/login");
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
             System.out.println("Opened web page");
-            wait.until(ExpectedConditions.presenceOfElementLocated(By.id("usernameField"))).sendKeys(username);
-            driver.findElement(By.id("passwordField")).sendKeys(password);
+//            wait.until(ExpectedConditions.presenceOfElementLocated(By.id("usernameField"))).sendKeys(username);
+//            driver.findElement(By.id("passwordField")).sendKeys(password);
+            WebElement usernameField;
+            try {
+                usernameField = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("usernameField")));
+            } catch (TimeoutException e) {
+                usernameField = wait.until(ExpectedConditions.presenceOfElementLocated(
+                        By.xpath("//input[@placeholder='Enter Email ID / Username']")));
+            }
+            usernameField.sendKeys(username);
+
+            WebElement passwordField;
+            try {
+                passwordField = driver.findElement(By.id("passwordField"));
+            } catch (Exception e) {
+                passwordField = driver.findElement(By.xpath("//input[@type='password']"));
+            }
+            passwordField.sendKeys(password);
+
             driver.findElement(By.xpath("//button[text()='Login']")).click();
             System.out.println("Clicked on login");
             System.out.println("waiting...");
