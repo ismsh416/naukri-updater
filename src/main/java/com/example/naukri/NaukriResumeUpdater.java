@@ -6,6 +6,7 @@ import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import io.github.bonigarcia.wdm.WebDriverManager;
@@ -15,12 +16,23 @@ import java.time.Duration;
 
 public class NaukriResumeUpdater {
     public static void main(String[] args) {
-        String username = "ismailsh416@gmail.com";
-        String password = "Oneplus@6";
+        String username = System.getenv("NAUKRI_USERNAME");
+        String password = System.getenv("NAUKRI_PASSWORD");
         String resumePath = Paths.get("src/main/resources/Ismail_Shaik.pdf").toAbsolutePath().toString();
-        WebDriver driver = new ChromeDriver();
-        driver.manage().window().maximize();
-        WebDriverManager.chromedriver().setup();
+//        WebDriver driver = new ChromeDriver();
+//        driver.manage().window().maximize();
+//        WebDriverManager.chromedriver().setup();
+//
+//        WebDriverManager.chromedriver().setup();
+
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--headless=new"); // required for GitHub Actions (no GUI)
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--window-size=1920,1080");
+
+        WebDriver driver = new ChromeDriver(options);
+
         try {
             driver.get("https://www.naukri.com/nlogin/login");
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));

@@ -1,0 +1,26 @@
+name: Naukri Resume Updater
+
+on:
+  workflow_dispatch:      # run manually
+  schedule:
+    - cron: "0/2 * * * *"   # runs every day at 6:00 UTC (11:30 AM IST)
+
+jobs:
+  run-naukri-updater:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/gradle-build-action@v3
+
+      - name: Run Naukri Resume Updater
+        run: ./gradlew run
