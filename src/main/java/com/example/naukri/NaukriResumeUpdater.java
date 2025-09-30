@@ -27,8 +27,6 @@ public class NaukriResumeUpdater {
         options.addArguments("--window-size=1920,1080");
         options.addArguments("--headless=new"); // container has no GUI
         WebDriver driver = new RemoteWebDriver(new URL("http://localhost:4444/wd/hub"), options);
-//        WebDriver driver = new ChromeDriver(options);
-
         try {
             driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
             driver.get("https://www.naukri.com/nlogin/login");
