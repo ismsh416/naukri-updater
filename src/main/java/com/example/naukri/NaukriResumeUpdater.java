@@ -131,10 +131,16 @@ public class NaukriResumeUpdater {
             System.out.println("Navigating to profile page...");
             driver.get("https://www.naukri.com/mnjuser/profile");
 
-            // wait and click update resume
-            WebElement updateLink = wait.until(ExpectedConditions.elementToBeClickable(
-                    By.cssSelector("a.secondary-content.typ-14Bold, a[title*='Update']")));
-            updateLink.click();
+            WebElement updateLink = wait.until(ExpectedConditions
+                    .presenceOfElementLocated(By.xpath("//a[@class='secondary-content typ-14Bold' and normalize-space()='Update']")));
+            ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", updateLink);
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", updateLink);
+            System.out.println("✅ Clicked on Update link");
+
+//            // wait and click update resume
+//            WebElement updateLink = wait.until(ExpectedConditions.elementToBeClickable(
+//                    By.cssSelector("a.secondary-content.typ-14Bold, a[title*='Update']")));
+//            updateLink.click();
 
             // locate file input and upload file
             WebElement fileInput = wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("input[type='file']")));
