@@ -7,239 +7,133 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
 
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
-
 public class NaukriResumeUpdater {
-
-    private static final Path SCREENSHOT_PATH = Paths.get("build", "screenshots", "debug_screenshot.png");
 
     public static void main(String[] args) throws MalformedURLException {
         String username = System.getenv("NAUKRI_USERNAME");
         String password = System.getenv("NAUKRI_PASSWORD");
-        String resumePath = Paths.get("src", "main", "resources", "Ismail_Shaik.pdf").toAbsolutePath().toString();
-
-        if (username == null || password == null) {
-            System.out.println("Please set NAUKRI_USERNAME and NAUKRI_PASSWORD environment variables.");
-            return;
-        }
+        String resumePath = Paths.get("src/main/resources/Ismail_Shaik.pdf").toAbsolutePath().toString();
 
         ChromeOptions options = new ChromeOptions();
-
-        // Standard flags for running in CI / container
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--window-size=1920,1080");
-
-        // Keep headless for CI; remove this line if testing locally with UI
         options.addArguments("--headless=new");
 
-        // Anti-detection / fingerprint tweaks (may help)
-        options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
-        options.setExperimentalOption("useAutomationExtension", false);
-
-        // Set a realistic user-agent
-        options.addArguments("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                + "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
-
-        // Prevent webdriver property exposure in some cases
-        Map<String, Object> prefs = new HashMap<>();
-        prefs.put("credentials_enable_service", false);
-        prefs.put("profile.password_manager_enabled", false);
-        options.setExperimentalOption("prefs", prefs);
-
-        // Connect to Selenium service (service container / local grid)
         WebDriver driver = new RemoteWebDriver(new URL("http://localhost:4444/wd/hub"), options);
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
         try {
-            driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+            driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
 
-            System.out.println("Opening login page...");
-            driver.get("https://www.naukri.com/nlogin/login");
+            // Always login first
+            doLogin(driver, wait, username, password);
 
-            // quick check if server returned an Access Denied right away
-            if (isAccessDenied(driver)) {
-                System.out.println("Server returned Access Denied immediately after GET. Saving screenshot and exiting.");
-                saveScreenshot(driver);
-                return;
-            }
-
-            // attempt to close common popups (cookie banner / overlays)
-            dismissPopups(driver);
-
-            // locate username field (try id, then placeholder, then fallback by name)
-            WebElement usernameField;
-            try {
-                usernameField = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("usernameField")));
-            } catch (TimeoutException e1) {
-                try {
-                    usernameField = wait.until(ExpectedConditions.presenceOfElementLocated(
-                            By.xpath("//input[contains(@placeholder,'Email') or contains(@placeholder,'Username')]")));
-                } catch (TimeoutException e2) {
-                    // last resort: any input[type='text'] on the page
-                    usernameField = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//input[@type='text' or @type='email']")));
-                }
-            }
-
-            // type username like a human
-            humanType(usernameField, username);
-
-            // password field
-            WebElement passwordField;
-            try {
-                passwordField = driver.findElement(By.id("passwordField"));
-            } catch (NoSuchElementException ex) {
-                passwordField = driver.findElement(By.xpath("//input[@type='password']"));
-            }
-            humanType(passwordField, password);
-
-            // click login (try several possible locators)
-            try {
-                WebElement loginBtn = wait.until(ExpectedConditions.elementToBeClickable(
-                        By.xpath("//button[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'login') or contains(., 'Sign in')]")));
-                loginBtn.click();
-            } catch (TimeoutException e) {
-                System.out.println("Login button not found using primary xpath; trying alternative selectors.");
-                try {
-                    WebElement alt = driver.findElement(By.cssSelector("button[type='submit']"));
-                    alt.click();
-                } catch (Exception ex) {
-                    System.out.println("Failed to click login. Saving screenshot for debug.");
-                    saveScreenshot(driver);
-                    return;
-                }
-            }
-
-            // small wait + check for access denied after login click
-            Thread.sleep(2000);
-            if (isAccessDenied(driver)) {
-                System.out.println("Server returned Access Denied after clicking login. Saving screenshot and exiting.");
-                saveScreenshot(driver);
-                return;
-            }
-
-            // navigate to profile
-            System.out.println("Navigating to profile page...");
+            // Navigate to profile
             driver.get("https://www.naukri.com/mnjuser/profile");
 
-            WebElement updateLink = wait.until(ExpectedConditions
-                    .presenceOfElementLocated(By.xpath("//a[normalize-space()='Update']")));
+            // If redirected back to login, try login again
+            if (driver.getCurrentUrl().contains("nlogin")) {
+                System.out.println("⚠️ Redirected to login again, retrying...");
+                doLogin(driver, wait, username, password);
+                driver.get("https://www.naukri.com/mnjuser/profile");
+            }
 
-// Scroll + JS click
+            // Find Update link
+            WebElement updateLink = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//a[normalize-space()='Update' and contains(@class,'secondary-content')]")));
+
             ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", updateLink);
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", updateLink);
 
-            System.out.println("✅ Clicked on Update link");
+            System.out.println("✅ Clicked on Update Resume link");
 
-//            // wait and click update resume
-//            WebElement updateLink = wait.until(ExpectedConditions.elementToBeClickable(
-//                    By.cssSelector("a.secondary-content.typ-14Bold, a[title*='Update']")));
-//            updateLink.click();
-
-            // locate file input and upload file
+            // File input
             WebElement fileInput = wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("input[type='file']")));
             ((JavascriptExecutor) driver).executeScript("arguments[0].style.display='block';", fileInput);
             fileInput.sendKeys(resumePath);
-            System.out.println("Resume file selected: " + resumePath);
 
-            // click save/upload if available
+            System.out.println("📄 Resume file selected");
+
+            // Save/Upload button
             try {
-                WebElement saveBtn = wait.until(ExpectedConditions.elementToBeClickable(
-                        By.xpath("//button[contains(., 'Save') or contains(., 'Upload')]")));
+                WebElement saveBtn = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//button[contains(text(),'Save') or contains(text(),'Upload')]")));
                 saveBtn.click();
-                System.out.println("Clicked Save/Upload");
+                System.out.println("💾 Save/Upload clicked");
             } catch (TimeoutException ignored) {
-                System.out.println("Save/Upload button not found — upload may auto-save.");
+                System.out.println("ℹ️ No Save button detected, upload may auto-save.");
             }
 
-            System.out.println("✅ Resume upload attempted. Sleeping briefly to let server process...");
-            Thread.sleep(4000);
-
-            // final Access Denied check
-            if (isAccessDenied(driver)) {
-                System.out.println("Access Denied detected after upload. Saved screenshot.");
-                saveScreenshot(driver);
-            } else {
-                System.out.println("Finished — no Access Denied detected (may still require manual verification).");
-            }
+            System.out.println("✅ Resume uploaded successfully!");
+            Thread.sleep(5000);
 
         } catch (Exception e) {
-            System.out.println("Exception: " + e);
+            System.out.println("❌ Exception: " + e);
             saveScreenshot(driver);
+            saveDomDump(driver);
         } finally {
             driver.quit();
         }
     }
 
-    private static void humanType(WebElement element, String text) {
-        element.click();
-        // type char-by-char with tiny random delay
-        for (char ch : text.toCharArray()) {
-            element.sendKeys(Character.toString(ch));
-            try {
-                Thread.sleep(ThreadLocalRandom.current().nextLong(50, 160)); // human-ish delay 50-160ms
-            } catch (InterruptedException ignored) {
-            }
-        }
-    }
-
-    private static void dismissPopups(WebDriver driver) {
+    private static void doLogin(WebDriver driver, WebDriverWait wait, String username, String password) {
         try {
-            WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(3));
-            // common cookie / close buttons
-            By[] selectors = new By[]{
-                    By.cssSelector("button[aria-label='Close']"),
-                    By.cssSelector("button[title='Close']"),
-                    By.cssSelector("div.cookie-banner button, .cookie-consent button"),
-                    By.xpath("//*[contains(text(),'Accept') and (self::button or self::a)]"),
-                    By.xpath("//*[contains(text(),'I agree') and (self::button or self::a)]")
-            };
-            for (By sel : selectors) {
-                try {
-                    WebElement el = shortWait.until(ExpectedConditions.elementToBeClickable(sel));
-                    el.click();
-                    System.out.println("Dismissed popup using: " + sel);
-                    Thread.sleep(300);
-                } catch (Exception ignored) {
-                }
-            }
-        } catch (Exception ignored) {
-        }
-    }
+            System.out.println("🔐 Performing login...");
+            driver.get("https://www.naukri.com/nlogin/login");
 
-    private static boolean isAccessDenied(WebDriver driver) {
-        try {
-            String page = driver.getPageSource();
-            if (page == null) return false;
-            String lower = page.toLowerCase();
-            // check phrases commonly present on Akamai/Access Denied pages
-            return lower.contains("access denied") || lower.contains("reference #") || lower.contains("you don't have permission to access");
+            WebElement usernameField = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//input[@id='usernameField' or @placeholder='Enter Email ID / Username']")));
+            usernameField.clear();
+            usernameField.sendKeys(username);
+
+            WebElement passwordField = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//input[@id='passwordField' or @type='password']")));
+            passwordField.clear();
+            passwordField.sendKeys(password);
+
+            WebElement loginBtn = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//button[text()='Login']")));
+            loginBtn.click();
+
+            // Wait for a post-login element
+            wait.until(ExpectedConditions.or(ExpectedConditions.presenceOfElementLocated(By.xpath("//span[contains(text(),'My Naukri')]")), ExpectedConditions.presenceOfElementLocated(By.xpath("//div[contains(@class,'nI-gNb-drawer__bars')]"))));
+
+            System.out.println("✅ Login successful");
         } catch (Exception e) {
-            return false;
+            System.out.println("❌ Login failed: " + e);
+            saveScreenshot(driver);
+            saveDomDump(driver);
+            throw e;
         }
     }
 
     private static void saveScreenshot(WebDriver driver) {
         try {
-            // ensure folder exists
-            Path folder = SCREENSHOT_PATH.getParent();
-            if (folder != null && !Files.exists(folder)) {
-                Files.createDirectories(folder);
+            File src = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+            File dest = new File("build/screenshots/debug_screenshot.png");
+            dest.getParentFile().mkdirs();
+            src.renameTo(dest);
+            System.out.println("📸 Saved screenshot to: " + dest.getAbsolutePath());
+        } catch (Exception e) {
+            System.out.println("⚠️ Could not save screenshot: " + e);
+        }
+    }
+
+    private static void saveDomDump(WebDriver driver) {
+        try {
+            String pageSource = driver.getPageSource();
+            File domFile = new File("build/screenshots/dom-dump.html");
+            domFile.getParentFile().mkdirs();
+            try (FileWriter fw = new FileWriter(domFile)) {
+                fw.write(pageSource);
             }
-            File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-            Files.copy(screenshot.toPath(), SCREENSHOT_PATH);
-            System.out.println("Saved screenshot to: " + SCREENSHOT_PATH.toAbsolutePath());
-        } catch (Exception ex) {
-            System.out.println("Failed to save screenshot: " + ex);
+            System.out.println("📝 Saved DOM dump to: " + domFile.getAbsolutePath());
+        } catch (IOException e) {
+            System.out.println("⚠️ Could not save DOM dump: " + e);
         }
     }
 }
+
