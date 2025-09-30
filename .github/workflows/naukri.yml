@@ -9,8 +9,11 @@ jobs:
   run-naukri-updater:
     runs-on: ubuntu-latest
 
-    container: # 👈 Run inside prebuilt Selenium container
-      image: selenium/standalone-chrome:latest
+    services:
+      selenium:
+        image: selenium/standalone-chrome:latest
+        ports:
+          - 4444:4444
 
     steps:
       - name: Checkout repo
@@ -30,3 +33,4 @@ jobs:
         env:
           NAUKRI_USERNAME: ${{ secrets.NAUKRI_USERNAME }}
           NAUKRI_PASSWORD: ${{ secrets.NAUKRI_PASSWORD }}
+
