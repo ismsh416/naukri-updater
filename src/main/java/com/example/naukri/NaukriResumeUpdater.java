@@ -26,7 +26,7 @@ public class NaukriResumeUpdater {
 //        WebDriverManager.chromedriver().setup();
 
         ChromeOptions options = new ChromeOptions();
-        options.addArguments("--headless=new"); // required for GitHub Actions (no GUI)
+//        options.addArguments("--headless=new"); // required for GitHub Actions (no GUI)
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--window-size=1920,1080");
@@ -34,6 +34,7 @@ public class NaukriResumeUpdater {
         WebDriver driver = new ChromeDriver(options);
 
         try {
+            driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
             driver.get("https://www.naukri.com/nlogin/login");
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
             System.out.println("Opened web page");
