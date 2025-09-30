@@ -32,7 +32,7 @@ public class NaukriResumeUpdater {
             driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
 
             // ✅ Correct login URL
-            driver.get("https://www.naukri.com/nlogin");
+            driver.get("https://www.naukri.com/nlogin/login");
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
             System.out.println("Opened login page");
 
