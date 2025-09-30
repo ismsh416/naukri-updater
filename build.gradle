@@ -1,0 +1,22 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.example.naukri'
+version = '1.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.seleniumhq.selenium:selenium-java:4.22.0'
+    implementation 'io.github.bonigarcia:webdrivermanager:6.1.0'
+    implementation "org.slf4j:slf4j-simple:2.0.12"
+
+}
+
+application {
+    mainClass = 'com.example.naukri.NaukriResumeUpdater'
+}
