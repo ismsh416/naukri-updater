@@ -19,18 +19,14 @@ public class NaukriResumeUpdater {
         String username = System.getenv("NAUKRI_USERNAME");
         String password = System.getenv("NAUKRI_PASSWORD");
         String resumePath = Paths.get("src/main/resources/Ismail_Shaik.pdf").toAbsolutePath().toString();
-//        WebDriver driver = new ChromeDriver();
-//        driver.manage().window().maximize();
-//        WebDriverManager.chromedriver().setup();
-//
-//        WebDriverManager.chromedriver().setup();
 
-        System.setProperty("webdriver.chrome.driver", "/usr/bin/chromedriver");
+        WebDriverManager.chromedriver().setup();
+
         ChromeOptions options = new ChromeOptions();
-        options.setBinary("/usr/bin/chromium-browser");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--window-size=1920,1080");
+        options.addArguments("--headless=new"); // container has no GUI
 
         WebDriver driver = new ChromeDriver(options);
 
