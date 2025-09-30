@@ -131,18 +131,14 @@ public class NaukriResumeUpdater {
             System.out.println("Navigating to profile page...");
             driver.get("https://www.naukri.com/mnjuser/profile");
 
-            // Wait for the "Update" link under Quick links -> Resume
             WebElement updateLink = wait.until(ExpectedConditions
-                    .presenceOfElementLocated(By.xpath("//div[contains(.,'Quick links')]/following::a[normalize-space()='Update']")));
+                    .presenceOfElementLocated(By.xpath("//a[normalize-space()='Update']")));
 
-// Scroll into view
+// Scroll + JS click
             ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", updateLink);
-
-// JS click (safer for React/overlay)
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", updateLink);
 
-            System.out.println("✅ Clicked on Resume Update link");
-
+            System.out.println("✅ Clicked on Update link");
 
 //            // wait and click update resume
 //            WebElement updateLink = wait.until(ExpectedConditions.elementToBeClickable(
