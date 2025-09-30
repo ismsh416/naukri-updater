@@ -25,8 +25,9 @@ public class NaukriResumeUpdater {
 //
 //        WebDriverManager.chromedriver().setup();
 
+        System.setProperty("webdriver.chrome.driver", "/usr/bin/chromedriver");
         ChromeOptions options = new ChromeOptions();
-        options.setBinary("/usr/bin/google-chrome"); // 👈 important for GitHub Actions
+        options.setBinary("/usr/bin/chromium-browser");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--window-size=1920,1080");

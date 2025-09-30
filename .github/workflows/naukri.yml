@@ -22,5 +22,15 @@ jobs:
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v3
 
+      - name: Install Chromium + Chromedriver
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser chromium-chromedriver
+          chromium-browser --version
+          chromedriver --version
+
       - name: Run Naukri Resume Updater
         run: ./gradlew run
+        env:
+          NAUKRI_USERNAME: ${{ secrets.NAUKRI_USERNAME }}
+          NAUKRI_PASSWORD: ${{ secrets.NAUKRI_PASSWORD }}
