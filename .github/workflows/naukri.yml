@@ -3,7 +3,7 @@ name: Naukri Resume Updater
 on:
   workflow_dispatch:      # run manually
   schedule:
-    - cron: "0/2 * * * *"   # runs every day at 6:00 UTC (11:30 AM IST)
+    - cron: "0 0 1 * *"   # runs every day at 6:00 UTC (11:30 AM IST)
 
 jobs:
   run-naukri-updater:
